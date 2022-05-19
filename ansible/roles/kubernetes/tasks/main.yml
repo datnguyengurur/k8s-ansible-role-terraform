@@ -87,12 +87,12 @@
 #     msg: "{{ certificate_key }}"
 
 - include_tasks: master-setup.yml
-  when: "'k8s_dev_master_first_node' in group_names"
+  when: "master_first_node_tag in group_names"
 
 - name: Get the kubeadm join command from the Kubernetes master.
   command: kubeadm token create --print-join-command
   changed_when: false
-  when: "'k8s_dev_master_first_node' in group_names"
+  when: "master_first_node_tag in group_names"
   register: kubernetes_join_command_result
 
 - name: Set master join command fact
@@ -120,7 +120,7 @@
 #     msg: "{{ kubernetes_join_command }}"
 
 - include_tasks: master-join.yml
-  when: "'k8s_dev_master_cluster' in group_names and 'k8s_dev_master_first_node' not in group_names"
+  when: "master_group_tag in group_names and master_first_node_tag not in group_names"
 
 - include_tasks: node-setup.yml
-  when: "'k8s_dev_worker_cluster' in group_names"
+  when: "worker_group_tag in group_names"

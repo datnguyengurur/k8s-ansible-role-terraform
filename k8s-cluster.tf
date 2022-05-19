@@ -330,7 +330,10 @@ resource "local_file" "k8s_ansible_playbook" {
     directory_permission = "0700"
     content = templatefile("templates/k8s.tftpl",
         {
-            k8s_cluster_group = vsphere_tag.k8s_dev_members.name 
+            k8s_cluster_group = vsphere_tag.k8s_dev_members.name
+            master_first_node_tag = vsphere_tag.k8s_master_first_node.name
+            master_group_tag = vsphere_tag.k8s_dev_master_cluster.name
+            worker_group_tag = vsphere_tag.k8s_dev_worker_cluster.name
             certificate_key = "" # f898771546fd9a877f01b1494ca2a3790a6113eebdbf669e34245949137650c4
             # Certificate Key is sensitive variable, store it safe. Maybe create and store it from vault
             # Create by running the command "kubeadm certs certificate-key"

@@ -15,3 +15,6 @@ kubernetes_flannel_manifest_file: https://raw.githubusercontent.com/coreos/flann
 
 # Calico config files
 kubernetes_calico_manifest_file: https://projectcalico.docs.tigera.io/manifests/calico.yaml
+master_first_node_tag: "k8s_dev_master_first_node"
+master_group_tag: "k8s_dev_master_cluster"
+worker_group_tag: "k8s_dev_worker_cluster"

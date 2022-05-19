@@ -3,6 +3,9 @@
   debugger: never
   gather_facts: true
   vars:
+    - master_first_node_tag: "${master_first_node_tag}"
+    - master_group_tag: "${master_group_tag}"
+    - worker_group_tag: "${worker_group_tag}"
     - certificate_key: "${certificate_key}" 
     - longhorn_version: "${longhorn_version}" 
     - control_plane_endpoint: "${control_plane_endpoint}"
