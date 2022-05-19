@@ -1,0 +1,5 @@
+---
+- name: Join master node to Kubernetes cluster
+  shell: >
+    {{ kubernetes_master_join_command }}
+  when: (not kubernetes_init_stat.stat.exists)

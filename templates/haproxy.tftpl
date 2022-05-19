@@ -1,0 +1,38 @@
+- hosts: "{{ lookup('env', 'WORKING_HOST') }}"
+  become: true
+  debugger: never
+  gather_facts: true
+  vars:
+    - haproxy_frontend_name: ${frontend_name}
+    - haproxy_frontend_bind_address: ${bind_address}
+    - haproxy_frontend_port: ${frontend_port}
+    - haproxy_backend_name: ${backend_name}
+    - haproxy_backend_port: ${backend_port}
+    - haproxy_backend_servers:
+%{ for host in backend_servers ~}
+      - name: ${host.name}
+        address: ${host.default_ip_address}
+%{ endfor ~}
+    - keepalived_sync_groups:
+        haproxy:
+          instances:
+%{ for i in haproxy_instances ~}
+            - ${i.name}
+%{ endfor ~}
+    - keepalived_instances:
+%{ for i in haproxy_instances ~}
+        ${i.name}:
+          interface: ${i.interface_name}
+          state: "{{ 'MASTER' if lookup('env', 'IS_MASTER') == '1'  else 'BACKUP' }}"
+          virtual_router_id: ${i.router_id}
+          priority: "{{ '100' if lookup('env', 'IS_MASTER') == '1'  else 60|random }}"
+          authentication_password: ${i.keepalived_password}
+          vips:
+            - "${i.vip} dev ${i.interface_name}"
+          track_interfaces:
+            - ${i.interface_name}
+%{ endfor ~}
+  roles:
+%{ for r in ansible_roles ~}
+    - ${r}
+%{ endfor ~}

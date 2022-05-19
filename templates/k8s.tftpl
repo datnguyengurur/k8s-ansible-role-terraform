@@ -1,0 +1,13 @@
+- hosts: "${k8s_cluster_group}"
+  become: true
+  debugger: never
+  gather_facts: true
+  vars:
+    - certificate_key: "${certificate_key}" 
+    - longhorn_version: "${longhorn_version}" 
+    - control_plane_endpoint: "${control_plane_endpoint}"
+    - kubernetes_pod_network: 
+        cni: '${pod_network_cni}'
+        cidr: '${pod_network_cidr}' 
+  roles:
+    - kubernetes

@@ -1,0 +1,126 @@
+---
+- name: Add Kubernetes repository.
+  become: true
+  shell: |
+    curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+  args:
+    warn: false
+
+- name: "Ensure dependencies are installed"
+  apt:
+    update_cache: true
+    name:
+      - containerd
+      - nfs-common
+      - open-iscsi
+      - kubelet
+      - kubeadm
+      - kubectl
+      - kubernetes-cni
+    state: latest
+
+- name: Create a directory for containerd
+  become: true
+  ansible.builtin.file:
+    path: /etc/containerd
+    state: directory
+    mode: '0755'
+
+- name: Create default config for containerd
+  become: true
+  shell: |
+    containerd config default | tee /etc/containerd/config.toml;
+
+- name: Config sys group for container runtime
+  become: true
+  shell: |
+    sed -i -e 's/SystemdCgroup.*/SystemdCgroup = true/g' /etc/containerd/config.toml
+
+- include_tasks: sysctl-setup.yml
+
+- name: Enable containerd service
+  become: true
+  ansible.builtin.service:
+    name: containerd
+    enabled: true
+    state: restarted
+
+- name: Disable Swap
+  become: true
+  shell: |
+    swapoff -a;
+    sed -ri '/\sswap\s/s/^#?/#/' /etc/fstab;
+
+- name: Ensure kubelet is started and enabled at boot.
+  service:
+    name: kubelet
+    state: started
+    enabled: true
+
+- name: Check if Kubernetes has already been initialized.
+  stat:
+    path: /etc/kubernetes/admin.conf
+  register: kubernetes_init_stat
+
+- name: Check if node has joined cluster.
+  stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: kubernetes_joined_stat
+
+# - name: Get certificate key on the first master node
+#   command: |
+#     kubeadm certs certificate-key
+#   register: certificate_key_result
+#   when: "'k8s_dev_master_first_node' in group_names"
+
+# - name: Set certificate key fact all master hosts
+#   set_fact:
+#     certificate_key: |
+#       {{ certificate_key_result.stdout }}
+#   when: certificate_key_result.stdout is defined
+#   delegate_to: "{{ item }}"
+#   delegate_facts: true
+#   with_items: "{{ play_hosts }}"
+
+# - debug:
+#     msg: "{{ certificate_key }}"
+
+- include_tasks: master-setup.yml
+  when: "'k8s_dev_master_first_node' in group_names"
+
+- name: Get the kubeadm join command from the Kubernetes master.
+  command: kubeadm token create --print-join-command
+  changed_when: false
+  when: "'k8s_dev_master_first_node' in group_names"
+  register: kubernetes_join_command_result
+
+- name: Set master join command fact
+  set_fact:
+    kubernetes_master_join_command: |
+      {{ kubernetes_join_command_result.stdout }} --control-plane --certificate-key {{ certificate_key }}
+  when: kubernetes_join_command_result.stdout is defined
+  delegate_to: "{{ item }}"
+  delegate_facts: true
+  with_items: "{{ play_hosts }}"
+
+# - debug:
+#     msg: "{{ kubernetes_master_join_command }}"
+
+- name: Set the kubeadm join command globally.
+  set_fact:
+    kubernetes_join_command: |
+      {{ kubernetes_join_command_result.stdout }}
+  when: kubernetes_join_command_result.stdout is defined
+  delegate_to: "{{ item }}"
+  delegate_facts: true
+  with_items: "{{ play_hosts }}"
+
+# - debug:
+#     msg: "{{ kubernetes_join_command }}"
+
+- include_tasks: master-join.yml
+  when: "'k8s_dev_master_cluster' in group_names and 'k8s_dev_master_first_node' not in group_names"
+
+- include_tasks: node-setup.yml
+  when: "'k8s_dev_worker_cluster' in group_names"

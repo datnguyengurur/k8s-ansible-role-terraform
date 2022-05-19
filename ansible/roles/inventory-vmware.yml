@@ -1,0 +1,16 @@
+plugin: community.vmware.vmware_vm_inventory
+strict: false
+hostname: <vCenter Hostname> ### vcenter.intranet.ntdsecurity.com
+username: <Username> ### readonly@ntdsecurity.com
+password: <Password> ### Super Strong Pass
+validate_certs: True
+with_tags: True
+keyed_groups:
+- key: tag_category.ansible_role #### Create a tag category (Multi Tags option is prefer) for ansible to filter Tags into Groups
+  prefix: ""
+  separator: ""
+with_nested_properties: True
+hostnames:
+  - config.name
+filters:
+  - summary.runtime.powerState == "poweredOn"

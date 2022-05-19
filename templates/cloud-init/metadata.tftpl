@@ -1,0 +1,13 @@
+instance-id: ${hostname}
+local-hostname: ${hostname}
+network:
+  version: 2
+  ethernets:
+    ens192:
+      %{ if dhcp == "true" }dhcp4: true
+      %{ else }addresses:
+        - ${ip_address}/${netmask}
+      gateway4: ${gateway}
+      nameservers:
+        addresses: ${nameservers}
+      %{ endif }

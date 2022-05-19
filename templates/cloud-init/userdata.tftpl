@@ -1,0 +1,15 @@
+#cloud-config
+users:
+  - default
+%{ for user in users ~}
+  - name: ${user.username}
+    primary_group: ${user.username}
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: sudo, wheel
+    package_upgrade: true
+    ssh_import_id: None
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ${user.ssh_public_key}
+%{ endfor ~}

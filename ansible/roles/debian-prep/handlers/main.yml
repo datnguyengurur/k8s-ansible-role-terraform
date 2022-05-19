@@ -1,0 +1,7 @@
+---
+# handlers file for debian-prep
+- name: restarted unattended-upgrades service 
+  ansible.builtin.service:
+    name: unattended-upgrades
+    enabled: true
+    state: restarted

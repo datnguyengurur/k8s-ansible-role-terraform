@@ -1,0 +1,26 @@
+---
+- name: Add the br_netfilter module
+  modprobe:
+    name: br_netfilter
+    state: present
+- name: Add the overlay module
+  modprobe:
+    name: overlay
+    state: present 
+- name: Make sure that the br_netfilter and overlay module is loaded
+  shell: |
+    cat <<EOF | tee /etc/modules-load.d/k8s.conf
+    overlay
+    br_netfilter
+    EOF
+    sysctl --system
+    systemctl daemon-reload
+
+- name: Let iptables see bridged traffic.
+  sysctl:
+    name: "{{ item }}"
+    value: '1'
+    state: present
+  loop:
+    - net.bridge.bridge-nf-call-iptables
+    - net.ipv4.ip_forward
